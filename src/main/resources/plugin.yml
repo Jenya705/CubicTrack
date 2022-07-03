@@ -1,0 +1,5 @@
+name: CubicTrack
+version: '${version}'
+main: space.cubicworld.track.CubicTrack
+api-version: 1.19
+authors: [ Jenya705 ]
