@@ -21,6 +21,7 @@ repositories {
 dependencies {
     implementation 'mysql:mysql-connector-java:8.0.29'
     implementation 'com.zaxxer:HikariCP:5.0.1'
+    implementation 'com.google.guava:guava:31.1-jre'
     compileOnly 'io.papermc.paper:paper-api:1.19-R0.1-SNAPSHOT'
     compileOnly 'org.jetbrains:annotations:23.0.0'
     compileOnly 'org.projectlombok:lombok:1.18.24'

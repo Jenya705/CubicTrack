@@ -6,52 +6,44 @@ import space.cubicworld.track.CubicTrack;
 import space.cubicworld.track.action.Action;
 import space.cubicworld.track.database.ActionInsert;
 
-import java.util.Objects;
-
 public class ActionInsertBuilder {
 
     private final long epoch;
-    private Short actionId;
-    private Short worldId;
-    private Integer locationX;
-    private Integer locationY;
-    private Integer locationZ;
-    private Integer invokerId;
-    private int targetId;
-    private short oldMaterialId;
+    private Action action;
+    private Location location;
+    private String invoker;
+    private String target;
+    private Material oldMaterial;
     private String oldMaterialData;
-    private short newMaterialId;
+    private Material newMaterial;
     private String newMaterialData;
 
     public ActionInsertBuilder() {
-        this.epoch = System.currentTimeMillis();
+        epoch = System.currentTimeMillis();
     }
 
     public ActionInsertBuilder action(Action action) {
-        this.actionId = (short) CubicTrack.getInstance().getActions().getId(action.getName());
+        this.action = action;
         return this;
     }
 
     public ActionInsertBuilder location(Location location) {
-        this.worldId = (short) CubicTrack.getInstance().getWorlds().getId(location.getWorld().getName());
-        this.locationX = location.getBlockX();
-        this.locationY = location.getBlockY();
-        this.locationZ = location.getBlockZ();
+        this.location = location;
         return this;
     }
 
-    public ActionInsertBuilder invoker(String name) {
-        this.invokerId = CubicTrack.getInstance().getEntities().getId(name);
+    public ActionInsertBuilder invoker(String invoker) {
+        this.invoker = invoker;
         return this;
     }
 
-    public ActionInsertBuilder target(String name) {
-        this.targetId = CubicTrack.getInstance().getEntities().getId(name);
+    public ActionInsertBuilder target(String target) {
+        this.target = target;
         return this;
     }
 
     public ActionInsertBuilder oldMaterial(Material material) {
-        this.oldMaterialId = (short) CubicTrack.getInstance().getMaterials().getId(material.getKey().value());
+        this.oldMaterial = material;
         return this;
     }
 
@@ -61,7 +53,7 @@ public class ActionInsertBuilder {
     }
 
     public ActionInsertBuilder newMaterial(Material material) {
-        this.newMaterialId = (short) CubicTrack.getInstance().getMaterials().getId(material.getKey().value());
+        this.newMaterial = material;
         return this;
     }
 
@@ -71,18 +63,19 @@ public class ActionInsertBuilder {
     }
 
     public ActionInsert build() {
+        CubicTrack plugin = CubicTrack.getInstance();
         return new ActionInsert(
                 epoch,
-                Objects.requireNonNull(actionId, "action type is not filled"),
-                Objects.requireNonNull(worldId, "location is not filled"),
-                Objects.requireNonNull(locationX, "location is not filled"),
-                Objects.requireNonNull(locationY, "location is not filled"),
-                Objects.requireNonNull(locationZ, "location is not filled"),
-                Objects.requireNonNull(invokerId, "invoker is not filled"),
-                targetId,
-                oldMaterialId,
+                (short) plugin.getActions().getId(action.getName()),
+                (short) plugin.getWorlds().getId(location.getWorld().getName()),
+                location.getBlockX(),
+                location.getBlockY(),
+                location.getBlockZ(),
+                plugin.getEntities().getId(invoker),
+                plugin.getEntities().getId(target),
+                (short) plugin.getMaterials().getId(oldMaterial == null ? "" : oldMaterial.name()),
                 oldMaterialData,
-                newMaterialId,
+                (short) plugin.getMaterials().getId(newMaterial == null ? "" : newMaterial.name()),
                 newMaterialData
         );
     }

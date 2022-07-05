@@ -7,6 +7,8 @@ import space.cubicworld.track.action.ActionContainer;
 import space.cubicworld.track.database.ActionInsertTask;
 import space.cubicworld.track.listener.CubicTrackListener;
 import space.cubicworld.track.listener.PlayerJoinListener;
+import space.cubicworld.track.map.LazyDatabaseMap;
+import space.cubicworld.track.map.PreparedDatabaseMap;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -28,10 +30,10 @@ public final class CubicTrack extends JavaPlugin {
     private final List<CubicTrackListener> listeners = new CopyOnWriteArrayList<>();
     private final ActionContainer actionContainer = new ActionContainer();
     private CubicTrackDataSource dataSource;
-    private CubicTrackEnum worlds;
-    private CubicTrackEnum entities;
-    private CubicTrackEnum materials;
-    private CubicTrackEnum actions;
+    private PreparedDatabaseMap worlds;
+    private LazyDatabaseMap entities;
+    private PreparedDatabaseMap materials;
+    private PreparedDatabaseMap actions;
     private ActionInsertTask actionInsertTask;
 
     public CubicTrack() {
@@ -49,10 +51,10 @@ public final class CubicTrack extends JavaPlugin {
                 getResource("hikari.properties")
         );
         setupDatabase();
-        worlds = new CubicTrackEnum("worlds_map");
-        entities = new CubicTrackEnum("entities_map");
-        materials = new CubicTrackEnum("materials_map");
-        actions = new CubicTrackEnum("actions_map");
+        worlds = new PreparedDatabaseMap("worlds_map");
+        entities = new LazyDatabaseMap("entities_map");
+        materials = new PreparedDatabaseMap("materials_map");
+        actions = new PreparedDatabaseMap("actions_map");
         actionInsertTask = new ActionInsertTask();
         listeners.addAll(List.of(
                 new PlayerJoinListener()

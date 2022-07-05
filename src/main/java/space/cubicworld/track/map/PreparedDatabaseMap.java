@@ -1,18 +1,21 @@
-package space.cubicworld.track;
+package space.cubicworld.track.map;
+
+import space.cubicworld.track.CubicTrack;
 
 import java.sql.*;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class CubicTrackEnum {
+public class PreparedDatabaseMap implements DatabaseMap {
 
-    private final Map<Integer, String> idToValue = new ConcurrentHashMap<>();
     private final Map<String, Integer> valueToId = new ConcurrentHashMap<>();
-    private final AtomicInteger currentId = new AtomicInteger();
+    private final Map<Integer, String> idToValue = new ConcurrentHashMap<>();
+    private final AtomicInteger currentId = new AtomicInteger(0);
     private final String insertStatement;
 
-    public CubicTrackEnum(String tableName) throws SQLException {
+    public PreparedDatabaseMap(String tableName) throws SQLException {
         insertStatement = "INSERT INTO %s (id, name) VALUES (?, ?)".formatted(tableName);
         try (Connection connection = CubicTrack.getInstance().getDataSource().getConnection();
              Statement insert0Statement = connection.createStatement();
@@ -36,6 +39,7 @@ public class CubicTrackEnum {
         }
     }
 
+    @Override
     public int getId(String value) {
         return valueToId.computeIfAbsent(value, s -> {
             int id;
@@ -44,7 +48,7 @@ public class CubicTrackEnum {
             ){
                 id = currentId.incrementAndGet();
                 statement.setInt(1, id);
-                statement.setString(2, s);
+                statement.setString(2, s.toLowerCase(Locale.ROOT));
                 statement.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -53,8 +57,8 @@ public class CubicTrackEnum {
         });
     }
 
+    @Override
     public String getValue(int id) {
         return idToValue.get(id);
     }
-
 }

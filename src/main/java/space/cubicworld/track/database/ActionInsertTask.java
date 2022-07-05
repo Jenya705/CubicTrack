@@ -35,12 +35,12 @@ public class ActionInsertTask implements Runnable {
             ResultSet actionResult = selectLastActionStatement
                     .executeQuery("SELECT id FROM actions ORDER BY id DESC LIMIT 1");
             if (actionResult.next()) {
-                actionCounter = actionResult.getLong(1);
+                actionCounter = actionResult.getLong(1) + 1;
             }
             ResultSet dataResult = selectLastDataStatement
                     .executeQuery("SELECT id FROM materials_data ORDER BY id DESC LIMIT 1");
             if (dataResult.next()) {
-                dataCounter = dataResult.getLong(1);
+                dataCounter = dataResult.getLong(1) + 1;
             }
             else {
                 dataCounter = 1;
