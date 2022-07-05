@@ -20,7 +20,6 @@ public class PlayerJoinListener extends CubicTrackListener {
                         .action(DefaultAction.PLAYER_JOIN)
                         .invoker(CubicTrackEntities.getName(event.getPlayer()))
                         .location(event.getPlayer().getLocation())
-                        .build()
         );
     }
 

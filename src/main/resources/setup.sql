@@ -56,8 +56,6 @@ CREATE TABLE IF NOT EXISTS `actions` (
 	FOREIGN KEY(`target_id`) REFERENCES `entities_map`(`id`) ON DELETE CASCADE,
 	FOREIGN KEY(`old_material_id`) REFERENCES `materials_map`(`id`) ON DELETE CASCADE,
 	FOREIGN KEY(`new_material_id`) REFERENCES `materials_map`(`id`) ON DELETE CASCADE,
-	FOREIGN KEY(`old_material_data_id`) REFERENCES `materials_data`(`id`) ON DELETE CASCADE,
-	FOREIGN KEY(`new_material_data_id`) REFERENCES `materials_data`(`id`) ON DELETE CASCADE,
 	KEY `epoch` (`epoch`),
 	KEY `location` (`world_id`, `location_x`, `location_y`, `location_z`),
 	KEY `restored` (`restored`)

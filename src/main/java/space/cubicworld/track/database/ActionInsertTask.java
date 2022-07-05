@@ -3,8 +3,11 @@ package space.cubicworld.track.database;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import space.cubicworld.track.CubicTrack;
+import space.cubicworld.track.action.insert.ActionInsertBuilder;
+import space.cubicworld.track.util.Either;
 
 import java.sql.*;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Level;
@@ -13,7 +16,7 @@ public class ActionInsertTask implements Runnable {
 
     private static boolean initialized = false;
 
-    private final Queue<ActionInsert> actions = new ConcurrentLinkedDeque<>();
+    private final Queue<Either<ActionInsert, ActionInsertBuilder>> actions = new ConcurrentLinkedDeque<>();
 
     private long actionCounter = 0;
     private long dataCounter;
@@ -35,15 +38,15 @@ public class ActionInsertTask implements Runnable {
             ResultSet actionResult = selectLastActionStatement
                     .executeQuery("SELECT id FROM actions ORDER BY id DESC LIMIT 1");
             if (actionResult.next()) {
-                actionCounter = actionResult.getLong(1) + 1;
+                actionCounter = actionResult.getLong(1);
             }
             ResultSet dataResult = selectLastDataStatement
                     .executeQuery("SELECT id FROM materials_data ORDER BY id DESC LIMIT 1");
             if (dataResult.next()) {
-                dataCounter = dataResult.getLong(1) + 1;
+                dataCounter = dataResult.getLong(1);
             }
             else {
-                dataCounter = 1;
+                dataCounter = 0;
                 try (Statement insertEmptyDataStatement = connection.createStatement()) {
                     insertEmptyDataStatement.executeUpdate("INSERT INTO materials_data (id, data) VALUES (0, \"\")");
                 }
@@ -69,9 +72,11 @@ public class ActionInsertTask implements Runnable {
                          """)
             ) {
                 for (int i = 0; i < batchSize; ++i) {
-                    ActionInsert toInsert = actions.poll();
-                    if (toInsert == null) break;
-                    insertActionStatement.setLong(1, actionCounter++);
+                    Either<ActionInsert, ActionInsertBuilder> toInsertInto = actions.poll();
+                    if (toInsertInto == null) break;
+                    ActionInsert toInsert = toInsertInto.getFirst();
+                    if (toInsert == null) toInsert = toInsertInto.getSecond().build();
+                    insertActionStatement.setLong(1, ++actionCounter);
                     insertActionStatement.setLong(2, toInsert.getEpoch());
                     insertActionStatement.setShort(3, toInsert.getActionId());
                     insertActionStatement.setShort(4, toInsert.getWorldId());
@@ -83,7 +88,7 @@ public class ActionInsertTask implements Runnable {
                     insertActionStatement.setShort(10, toInsert.getOldMaterialId());
                     insertActionStatement.setShort(12, toInsert.getNewMaterialId());
                     if (toInsert.getOldMaterialData() != null && !toInsert.getOldMaterialData().isEmpty()) {
-                        insertDataStatement.setLong(1, dataCounter++);
+                        insertDataStatement.setLong(1, ++dataCounter);
                         insertDataStatement.setString(2, toInsert.getOldMaterialData());
                         insertDataStatement.addBatch();
                         insertActionStatement.setLong(11, dataCounter);
@@ -92,7 +97,7 @@ public class ActionInsertTask implements Runnable {
                         insertActionStatement.setLong(11, 0);
                     }
                     if (toInsert.getNewMaterialData() != null && !toInsert.getNewMaterialData().isEmpty()) {
-                        insertDataStatement.setLong(1, dataCounter++);
+                        insertDataStatement.setLong(1, ++dataCounter);
                         insertDataStatement.setString(2, toInsert.getNewMaterialData());
                         insertDataStatement.addBatch();
                         insertActionStatement.setLong(13, dataCounter);
@@ -112,7 +117,12 @@ public class ActionInsertTask implements Runnable {
     }
 
     public void addAction(ActionInsert insert) {
-        actions.add(insert);
+        actions.add(Either.first(insert));
+    }
+
+    public void addAction(ActionInsertBuilder builder) {
+        Objects.requireNonNull(builder, "builder");
+        actions.add(Either.second(builder));
     }
 
     public void schedule() {
