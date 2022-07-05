@@ -3,7 +3,10 @@ package space.cubicworld.track;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.bukkit.plugin.java.JavaPlugin;
+import space.cubicworld.track.action.ActionContainer;
+import space.cubicworld.track.database.ActionInsertTask;
 import space.cubicworld.track.listener.CubicTrackListener;
+import space.cubicworld.track.listener.PlayerJoinListener;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -23,11 +26,13 @@ public final class CubicTrack extends JavaPlugin {
     private static CubicTrack instance;
 
     private final List<CubicTrackListener> listeners = new CopyOnWriteArrayList<>();
+    private final ActionContainer actionContainer = new ActionContainer();
     private CubicTrackDataSource dataSource;
     private CubicTrackEnum worlds;
     private CubicTrackEnum entities;
     private CubicTrackEnum materials;
     private CubicTrackEnum actions;
+    private ActionInsertTask actionInsertTask;
 
     public CubicTrack() {
         instance = this;
@@ -44,10 +49,14 @@ public final class CubicTrack extends JavaPlugin {
                 getResource("hikari.properties")
         );
         setupDatabase();
-        worlds = new CubicTrackEnum("worlds");
-        entities = new CubicTrackEnum("entities");
-        materials = new CubicTrackEnum("materials");
-        actions = new CubicTrackEnum("actions");
+        worlds = new CubicTrackEnum("worlds_map");
+        entities = new CubicTrackEnum("entities_map");
+        materials = new CubicTrackEnum("materials_map");
+        actions = new CubicTrackEnum("actions_map");
+        actionInsertTask = new ActionInsertTask();
+        listeners.addAll(List.of(
+                new PlayerJoinListener()
+        ));
         saveConfig();
     }
 

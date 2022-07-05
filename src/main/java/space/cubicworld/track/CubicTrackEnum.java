@@ -20,7 +20,9 @@ public class CubicTrackEnum {
                      "SELECT * FROM %s".formatted(tableName)
              )
         ) {
-            insert0Statement.executeUpdate("INSERT IGNORE INTO %s (id, name) VALUES (0, \"\")");
+            insert0Statement.executeUpdate("INSERT IGNORE INTO %s (id, name) VALUES (0, \"\")"
+                    .formatted(tableName)
+            );
             ResultSet resultSet = selectStatement.executeQuery();
             int maxId = 0;
             while (resultSet.next()) {
