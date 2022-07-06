@@ -7,7 +7,9 @@ import space.cubicworld.track.action.ActionContainer;
 import space.cubicworld.track.database.ActionInsertTask;
 import space.cubicworld.track.listener.CubicTrackListener;
 import space.cubicworld.track.listener.PlayerJoinListener;
+import space.cubicworld.track.listener.PlayerQuitListener;
 import space.cubicworld.track.map.LazyDatabaseMap;
+import space.cubicworld.track.map.PlayerLazyDatabaseMapFiller;
 import space.cubicworld.track.map.PreparedDatabaseMap;
 
 import java.io.BufferedReader;
@@ -43,6 +45,7 @@ public final class CubicTrack extends JavaPlugin {
     @Override
     @SneakyThrows
     public void onEnable() {
+        saveDefaultConfig();
         dataSource = new CubicTrackDataSource(
                 getConfig().getString("sql.host", "localhost:3306"),
                 getConfig().getString("sql.database", "CubicTrack"),
@@ -56,10 +59,11 @@ public final class CubicTrack extends JavaPlugin {
         materials = new PreparedDatabaseMap("materials_map");
         actions = new PreparedDatabaseMap("actions_map");
         actionInsertTask = new ActionInsertTask();
+        getServer().getPluginManager().registerEvents(new PlayerLazyDatabaseMapFiller(), this);
         listeners.addAll(List.of(
-                new PlayerJoinListener()
+                new PlayerJoinListener(),
+                new PlayerQuitListener()
         ));
-        saveConfig();
     }
 
     @Override

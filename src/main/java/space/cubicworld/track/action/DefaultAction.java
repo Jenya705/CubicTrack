@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum DefaultAction implements Action {
 
-    PLAYER_JOIN("player-join", "join")
+    PLAYER_JOIN("player-join", "join"),
+    PLAYER_QUIT("player-quit", "quit")
     ;
 
     private final String name;

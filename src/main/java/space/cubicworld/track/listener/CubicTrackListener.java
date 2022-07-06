@@ -14,6 +14,7 @@ public abstract class CubicTrackListener implements Listener {
         this.name = name;
         reload();
     }
+
     public synchronized void reload() {
         boolean shouldEnable = CubicTrack
                 .getInstance()
@@ -24,8 +25,7 @@ public abstract class CubicTrackListener implements Listener {
             Bukkit.getServer()
                     .getPluginManager()
                     .registerEvents(this, CubicTrack.getInstance());
-        }
-        else if (!shouldEnable && enabled) {
+        } else if (!shouldEnable && enabled) {
             enabled = false;
             HandlerList.unregisterAll(this);
         }

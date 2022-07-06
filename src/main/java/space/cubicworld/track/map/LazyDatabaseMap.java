@@ -3,6 +3,7 @@ package space.cubicworld.track.map;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
+import org.bukkit.Bukkit;
 import space.cubicworld.track.CubicTrack;
 
 import java.sql.*;
@@ -11,13 +12,32 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
 public class LazyDatabaseMap implements DatabaseMap {
+
+    private static class CacheTask {
+        private boolean cancelled = false;
+
+        public void cancel() {
+            synchronized (this) {
+                this.cancelled = true;
+            }
+        }
+
+        public boolean isCancelled() {
+            synchronized (this) {
+                return cancelled;
+            }
+        }
+    }
 
     private final Map<String, Integer> permanentValueToId = new ConcurrentHashMap<>();
     private final Map<Integer, String> permanentIdToValue = new ConcurrentHashMap<>();
     private final Cache<Integer, String> cacheIdToValue = CacheBuilder.newBuilder().build();
     private final Cache<String, Integer> cacheValueToId;
+
+    private final Map<String, CacheTask> cacheTasks = new ConcurrentHashMap<>();
 
     private final String selectByValueStatement;
     private final String selectByIdStatement;
@@ -46,8 +66,7 @@ public class LazyDatabaseMap implements DatabaseMap {
             );
             if (resultSet.next()) {
                 counter.set(resultSet.getInt(1));
-            }
-            else {
+            } else {
                 try (Statement insertEmptyStatement = connection.createStatement()) {
                     insertEmptyStatement.executeUpdate(
                             "INSERT IGNORE INTO %s (id, name) VALUES (0, \"\")".formatted(tableName)
@@ -86,20 +105,32 @@ public class LazyDatabaseMap implements DatabaseMap {
         return value;
     }
 
-    public void cache(String value) throws SQLException {
+    public void cache(String value) {
         String loweredValue = value.toLowerCase(Locale.ROOT);
-        Integer id = cacheValueToId.getIfPresent(loweredValue);
-        if (id == null) {
-            id = fetchId(loweredValue);
-        } else {
-            cacheValueToId.invalidate(loweredValue);
-        }
-        permanentValueToId.put(loweredValue, id);
-        permanentIdToValue.put(id, loweredValue);
+        CacheTask thisTask = new CacheTask();
+        cacheTasks.put(value, thisTask);
+        Bukkit.getScheduler().runTaskAsynchronously(CubicTrack.getInstance(), () -> {
+            if (thisTask.isCancelled()) return;
+            Integer id = cacheValueToId.getIfPresent(loweredValue);
+            if (id == null) {
+                try {
+                    id = fetchId(loweredValue);
+                } catch (SQLException e) {
+                    CubicTrack.getInstance().getLogger().log(Level.WARNING, "Failed to fetch id: ", e);
+                }
+            } else {
+                cacheValueToId.invalidate(loweredValue);
+            }
+            if (thisTask.isCancelled()) return;
+            permanentValueToId.put(loweredValue, id);
+            permanentIdToValue.put(id, loweredValue);
+        });
     }
 
     public void unCache(String value) {
-        permanentIdToValue.remove(permanentValueToId.remove(value.toLowerCase(Locale.ROOT)));
+        CacheTask task = cacheTasks.get(value);
+        if (task != null) task.cancel();
+        else permanentIdToValue.remove(permanentValueToId.remove(value.toLowerCase(Locale.ROOT)));
     }
 
     private int fetchId(String value) throws SQLException {
